@@ -1,0 +1,31 @@
+# Task 3 (O): one OTLP receiver, two pipelines (traces + logs)
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  memory_limiter:               # protect the collector from overload
+    check_interval: 1s
+    limit_mib: 256
+  batch:
+
+exporters:
+  debug:
+    verbosity: basic            # one summary line per batch in docker logs
+  file/traces:
+    path: /out/traces.json
+  file/logs:
+    path: /out/logs.json
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug, file/traces]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug, file/logs]

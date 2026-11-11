@@ -1,0 +1,22 @@
+# Task 2 (E): OpenTelemetry Collector configuration
+receivers:
+  otlp:                         # accept OTLP from applications
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317  # 0.0.0.0, not localhost, so the host can reach it
+
+processors:
+  batch:                        # group spans before exporting (fewer, larger writes)
+
+exporters:
+  debug:                        # print every span to the container log
+    verbosity: detailed
+  file:                         # write OTLP-JSON lines to the mounted folder
+    path: /out/telemetry.json
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, file]
