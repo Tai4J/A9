@@ -1,25 +1,32 @@
-"""CodeQL demo: intentionally vulnerable code. Do not deploy."""
+"""CodeQL demo: the fixed version of the vulnerable code."""
+import re
 import sqlite3
-import subprocess
+import subprocess  # noqa: S404 (used safely below, no shell)
 
-from flask import Flask, request
+from flask import Flask, abort, request
 
 app = Flask(__name__)
+HOST_PATTERN = re.compile(r"^[A-Za-z0-9.-]{1,253}$")
 
 
 @app.route("/user")
 def user():
     name = request.args.get("name", "")
     conn = sqlite3.connect(":memory:")
-    # SQL injection: user input concatenated into the query
-    query = "SELECT * FROM users WHERE name = '" + name + "'"
-    rows = conn.execute(query).fetchall()
+    # Fixed: parameterized query, the driver escapes the value
+    rows = conn.execute(
+        "SELECT * FROM users WHERE name = ?", (name,)
+    ).fetchall()
     return {"rows": rows}
 
 
 @app.route("/ping")
 def ping():
     host = request.args.get("host", "localhost")
-    # Command injection: user input passed to a shell
-    out = subprocess.check_output("ping -c 1 " + host, shell=True)
-    return {"output": out.decode()}
+    # Fixed: validate input with an allowlist, no shell, argument list
+    if not HOST_PATTERN.fullmatch(host):
+        abort(400)
+    result = subprocess.run(  # noqa: S603,S607 (validated input, no shell)
+        ["ping", "-c", "1", host], capture_output=True, text=True, check=False
+    )
+    return {"output": result.stdout}
