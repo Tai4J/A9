@@ -25,13 +25,13 @@ def checkout():
 
     with tracer.start_as_current_span("validate-cart") as span:
         span.set_attribute("cart.item", item)
-        time.sleep(random.uniform(0.01, 0.03))
+        time.sleep(random.uniform(0.01, 0.03))  # noqa: S311 (simulated latency, not crypto)
         log.info("cart validated")
 
     with tracer.start_as_current_span("charge-card") as span:
         amount = 499
         span.set_attribute("payment.amount", amount)
-        time.sleep(random.uniform(0.05, 0.15))
+        time.sleep(random.uniform(0.05, 0.15))  # noqa: S311 (simulated latency, not crypto)
         log.info("payment of %d TWD accepted", amount)
 
     return jsonify(status="paid", item=item)
